@@ -1,0 +1,1 @@
+/subsystem=logging/logger=org.apache.cxf:add(level=WARN)

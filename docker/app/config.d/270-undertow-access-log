@@ -1,0 +1,1 @@
+/subsystem=undertow/server=default-server/host=default-host/setting=access-log:add

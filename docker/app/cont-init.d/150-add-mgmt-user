@@ -1,0 +1,3 @@
+#!/usr/bin/with-contenv /bin/sh
+/apps/wildfly/bin/add-user.sh admin -p admin -s
+echo "added management user 'admin' with weak password"

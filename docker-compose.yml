@@ -1,0 +1,75 @@
+version: '3.7'
+
+services:
+  traefik:
+    image: traefik:v1.7
+    command: --web --docker --logLevel=DEBUG
+    ports:
+      - 80:80
+      - 18080:8080
+    networks:
+      - hr-frontend
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /dev/null:/traefik.toml
+
+  postgresql:
+    image: soulwing/alpine-postgresql:latest
+    ports:
+      - 5432:5432
+    networks:
+      - hr-backend
+    environment:
+      DB_MAX_PREPARED_TRANSACTIONS: 100
+      DB_NAME: cresthr
+      DB_HBA_TRUST_NETS: 0.0.0.0/0
+    volumes:
+      - $HOME/Library/db/postgresql-hr:/var/lib/postgresql
+
+  wildfly:
+    build: ./docker/app
+    depends_on:
+      - postgresql
+    ports:
+      - 8080:8080
+      - 9990:9990
+      - 8787:8787
+    networks:
+      - hr-frontend
+      - hr-backend
+    environment:
+      DEPLOYMENT_TIER: dev
+      WILDFLY_BIND_INTERFACE: 10.4.0.0/16
+    volumes:
+      - $HOME/Library/intellij/remote:/var/tmp/intellij
+    labels:
+      traefik.backend: wildfly
+      traefik.docker.network: hr-frontend
+      traefik.frontend.rule: PathPrefix:/api/
+      traefik.port: "8080"
+
+  client:
+    image: node:10.15
+    command: sh -c "npm install && npm run dev"
+    working_dir: /app
+    volumes:
+      - ./client:/app
+    networks:
+      - hr-frontend
+    labels:
+      traefik.backend: client
+      traefik.docker.network: hr-frontend
+      traefik.frontend.rule: PathPrefix:/
+      traefik.port: "3000"
+
+networks:
+  hr-frontend:
+    name: hr-frontend
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.4.0.0/16
+  hr-backend:
+    driver: bridge
+
